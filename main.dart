@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'data_scraper.dart';
 
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
@@ -9,48 +9,9 @@ final dio = Dio();
 var jsonList;
 var pokemonList;
 var pokemonimgList = [];
-
-void getHttp() async {
-  final response = await dio.get('https://dummyjson.com/products');
-//  print(response);
-  if (response.statusCode == 200) {
-    jsonList = response.data["products"] as List;
-  } else {
-    print(response.statusCode);
-  }
-}
-
-Future<void> getPokemon() async {
-  final pokemonresponse = await dio.get('https://pokeapi.co/api/v2/pokemon');
-  print(pokemonresponse.data["results"][0]);
-  if (pokemonresponse.statusCode == 200) {
-    pokemonList = pokemonresponse.data["results"] as List;
-    //print(pokemonList);
-  } else {
-    print(pokemonresponse.statusCode);
-  }
-}
-
-Future<void> getPokemonimg(url) async {
-  // sprites/home/front_default
-  final imgresponse = await dio.get(url);
-  print(imgresponse.data["sprites"]["front_default"]);
-  if (imgresponse.statusCode == 200) {
-    pokemonimgList.add(imgresponse.data["sprites"]["front_default"]);
-//    print(pokemonimgList);
-  } else {
-    print(imgresponse.statusCode);
-  }
-}
-
-Future<void> pokemonInit() async {
-  await getPokemon();
-//  print(pokemonList);
-  for (var i = 0; i < pokemonList.length; i++) {
-    await getPokemonimg(pokemonList[i]["url"]);
-  }
-//  print(pokemonimgList);
-}
+var pokemonNameList = [];
+int _count = 0;
+var length1 = 0;
 
 void main() {
   getHttp();
@@ -58,9 +19,6 @@ void main() {
   pokemonInit();
   runApp(MyApp());
 }
-
-// Free api bulup bir tane tab ekleyip onları oraya yazabilirsin ui yapıp.
-// Dio kullanılabilir widget olarak. Ufak projeler için güzel.
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
@@ -110,6 +68,12 @@ class MyAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  void addPokemonName(pokemonName, index) {
+//    pokemonNameList[index] = pokemonName;
+    pokemonNameList.add(pokemonName);
+    notifyListeners();
+  }
 }
 
 // ...
@@ -155,34 +119,41 @@ class _MyHomePageState extends State<MyHomePage> {
         body: Center(
           child: mainArea,
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          backgroundColor: theme.colorScheme.primary,
-          items: const <BottomNavigationBarItem>[
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.favorite),
-              label: 'Favorites',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.history),
-              label: 'History',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.beach_access),
-              label: 'Test',
-            ),
-          ],
-          currentIndex: selectedIndex,
-          unselectedItemColor: Colors.black,
-          selectedItemColor: Colors.yellow[700],
-          onTap: (value) {
-            setState(() {
-              selectedIndex = value;
-            });
-          },
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
+            // sets the background color of the `BottomNavigationBar`
+            canvasColor: theme.colorScheme.primary,
+          ), // sets the inactive color of the `BottomNavigationBar`
+          child: BottomNavigationBar(
+            backgroundColor: theme.colorScheme.primary,
+            items: const <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.favorite),
+                label: 'Favorites',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.history),
+                label: 'History',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.catching_pokemon),
+                label: 'Pokémon',
+              ),
+            ],
+            currentIndex: selectedIndex,
+            unselectedItemColor: Colors.black,
+            showUnselectedLabels: true,
+            selectedItemColor: Colors.yellow[700],
+            onTap: (value) {
+              setState(() {
+                selectedIndex = value;
+              });
+            },
+          ),
         ),
       );
     });
@@ -266,6 +237,10 @@ class BigCard extends StatelessWidget {
 class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.titleMedium!.copyWith(
+      color: theme.colorScheme.onBackground,
+    );
     var appState = context.watch<MyAppState>();
     if (appState.favorites.isEmpty) {
       return Center(
@@ -276,15 +251,13 @@ class FavoritesPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(20),
-          child: Text('You have '
-              '${appState.favorites.length} favorites:'),
+          child: Text(
+            'You have '
+            '${appState.favorites.length} favorites:',
+            style: style,
+          ),
         ),
         for (var pair in appState.favorites)
-/*          ListTile(
-            iconColor: theme.colorScheme.primary,
-            leading: Icon(Icons.favorite),
-            title: Text(pair.asLowerCase),
-          ),*/
           TextButton.icon(
               onPressed: () {
                 appState.toggleFavoriteList(pair);
@@ -299,6 +272,10 @@ class FavoritesPage extends StatelessWidget {
 class HistoryPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.titleMedium!.copyWith(
+      color: theme.colorScheme.onBackground,
+    );
     var appState = context.watch<MyAppState>();
     if (appState.history.isEmpty) {
       return Center(
@@ -309,8 +286,11 @@ class HistoryPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.all(20),
-          child: Text('You have generated '
-              '${appState.history.length} words:'),
+          child: Text(
+            'You have generated '
+            '${appState.history.length} words:',
+            style: style,
+          ),
         ),
         for (var pair in appState.history)
           TextButton.icon(
@@ -326,30 +306,65 @@ class HistoryPage extends StatelessWidget {
   }
 }
 
-class TestPage extends StatelessWidget {
-  int _count = 0;
+class TestPage extends StatefulWidget {
+  @override
+  State<TestPage> createState() => _TestPageState();
+}
+
+class _TestPageState extends State<TestPage> {
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final style = theme.textTheme.headlineSmall!.copyWith(
+      color: theme.colorScheme.primary,
+    );
     var appState = context.watch<MyAppState>();
+    if (_count <= pokemonimgList.length) {
+      length1 = _count;
+    } else {
+      _count = pokemonimgList.length;
+    }
+    var nameToAdd = WordPair("Nameless", " ");
+
     return Scaffold(
-      body: GridView.count(
-        // Create a grid with 2 columns. If you change the scrollDirection to
-        // horizontal, this produces 2 rows.
-        crossAxisCount: 2,
-        children: List.generate(pokemonimgList.length, (index) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                height: 200,
-                child: Image.network(
-                  pokemonimgList[index],
-                  fit: BoxFit.fitHeight,
+      body: ColoredBox(
+        color: theme.colorScheme.surfaceVariant,
+        child: GridView.count(
+          crossAxisCount: 2,
+          children: List.generate(length1, (index) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Container(
+                  height: 200,
+                  child: Wrap(
+                    children: [
+                      SizedBox(
+                        width: 200,
+                        height: 155,
+                        child: Padding(
+                          padding: const EdgeInsets.all(15),
+                          child: Image.network(
+                            pokemonimgList[index],
+                            fit: BoxFit.fitWidth,
+                          ),
+                        ),
+                      ),
+                      Center(
+                        child: Text(
+                          pokemonNameList.length <= index
+                              ? "Nameless"
+                              : pokemonNameList[index].asPascalCase,
+                          style: style,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        }),
+            );
+          }),
+        ),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Container(
@@ -357,7 +372,64 @@ class TestPage extends StatelessWidget {
         width: 100,
         child: FloatingActionButton(
           onPressed: () {
-            _count++;
+            setState(() {
+              _count++;
+            });
+            showDialog<String>(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                scrollable: true,
+                title: const Text('You caught a Pokemon!'),
+                content: Wrap(alignment: WrapAlignment.center, children: [
+                  SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Image.network(
+                      pokemonimgList[length1],
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Text("Name your Pokemon")),
+                  SizedBox(
+                    width: 200,
+                    height: 200,
+                    child: Scrollbar(
+                      child: ListView(
+                        children: [
+                          for (var pair in appState.favorites)
+                            TextButton(
+                                onPressed: () {
+                                  //appState.addPokemonName(pair, length1);
+                                  nameToAdd = pair;
+                                },
+                                child: Text(pair.asPascalCase)),
+                        ],
+                      ),
+                    ),
+                  )
+                ]),
+                actions: <Widget>[
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context, 'Cancel');
+                      appState.addPokemonName(nameToAdd, length1);
+                    },
+                    child: const Text('Cancel'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      if (nameToAdd != WordPair("Nameless", " ")) {
+                        Navigator.pop(context, 'OK');
+                        appState.addPokemonName(nameToAdd, length1);
+                      }
+                    },
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
           },
           child: Text("Catch"),
         ),
@@ -365,117 +437,3 @@ class TestPage extends StatelessWidget {
     );
   }
 }
-
-/*
-class TestPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
-    return Scaffold(
-        body: GridView.count(
-      // Create a grid with 2 columns. If you change the scrollDirection to
-      // horizontal, this produces 2 rows.
-      crossAxisCount: 2,
-      children: List.generate(jsonList.length, (index) {
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Container(
-              height: 200,
-              child: Image.network(
-                jsonList[index]["images"][0],
-                fit: BoxFit.fitHeight,
-              ),
-            ),
-          ),
-        );
-      }),
-    ));
-  }
-}
-*/
-
-
-/*   
-Testt Page: 
-body: ListView.builder(
-        itemBuilder: (BuildContext context, int index) {
-          return Card(
-            child: ListTile(
-              leading: ClipRect(
-                clipBehavior: Clip.hardEdge,
-                child: Image.network(jsonList[index]["images"][0]),
-              ),
-              title: Text(jsonList[index]["title"]),
-              subtitle: Text(jsonList[index]["description"]),
-            ),
-          );
-        },
-        itemCount: jsonList == null ? 0 : jsonList.length,
-      )
-
-
-return Scaffold(
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          if (constraints.maxWidth < 450) {
-            // Use a more mobile-friendly layout with BottomNavigationBar
-            // on narrow screens.
-            return Column(
-              children: [
-                Expanded(child: mainArea),
-                SafeArea(
-                  child: BottomNavigationBar(
-                    items: [
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.home),
-                        label: 'Home',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.favorite),
-                        label: 'Favorites',
-                      ),
-                    ],
-                    currentIndex: selectedIndex,
-                    onTap: (value) {
-                      setState(() {
-                        selectedIndex = value;
-                      });
-                    },
-                  ),
-                )
-              ],
-            );
-          } else {
-            return Row(
-              children: [
-                SafeArea(
-                  child: NavigationRail(
-                    extended: constraints.maxWidth >= 600,
-                    destinations: [
-                      NavigationRailDestination(
-                        icon: Icon(Icons.home),
-                        label: Text('Home'),
-                      ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.favorite),
-                        label: Text('Favorites'),
-                      ),
-                    ],
-                    selectedIndex: selectedIndex,
-                    onDestinationSelected: (value) {
-                      setState(() {
-                        selectedIndex = value;
-                      });
-                    },
-                  ),
-                ),
-                Expanded(child: mainArea),
-              ],
-            );
-          }
-        },
-      ),
-    );
-    
-    */
