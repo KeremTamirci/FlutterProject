@@ -27,24 +27,25 @@ Future<void> getPokemon() async {
   }
 }
 
-Future<void> getPokemonimg(url) async {
+Future<void> getPokemonimg() async {
   // sprites/home/front_default
-  final imgresponse = await dio.get(url);
-  print(imgresponse.data["sprites"]["front_default"]);
-  if (imgresponse.statusCode == 200) {
-    pokemonimgList.add(imgresponse.data["sprites"]["front_default"]);
+  var url;
+  for (var i = 0; i < pokemonList.length; i++) {
+//    await getPokemonimg(pokemonList[i]["url"]);
+    url = pokemonList[i]["url"];
+    final imgresponse = await dio.get(url);
+    print(imgresponse.data["sprites"]["front_default"]);
+    if (imgresponse.statusCode == 200) {
+      pokemonimgList.add(imgresponse.data["sprites"]["front_default"]);
 //    print(pokemonimgList);
-  } else {
-    print(imgresponse.statusCode);
+    } else {
+      print(imgresponse.statusCode);
+    }
   }
 }
 
 Future<void> pokemonInit() async {
   await getPokemon();
-//  print(pokemonList);
-  for (var i = 0; i < pokemonList.length; i++) {
-    await getPokemonimg(pokemonList[i]["url"]);
-  }
+  await getPokemonimg();
   pokemonimgList.shuffle();
-//  print(pokemonimgList);
 }

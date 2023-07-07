@@ -34,7 +34,11 @@ class MyAppState extends ChangeNotifier {
   }
 
   void addPokemonName(pokemonName, index) {
-    pokemonNameList.add(pokemonName);
+    if (index == length1) {
+      pokemonNameList.add(pokemonName);
+    } else {
+      pokemonNameList[index] = pokemonName;
+    }
     notifyListeners();
   }
 }

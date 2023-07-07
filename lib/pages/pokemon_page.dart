@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../main.dart';
 import '../modals/my_app_state.dart';
+import '../widgets/favorite_list_dialog.dart';
+import '../widgets/grid_view_widget.dart';
 
 var nameToAdd = WordPair("Nameless", " ");
 
@@ -30,42 +32,7 @@ class _TestPageState extends State<TestPage> {
     return Scaffold(
       body: ColoredBox(
         color: theme.colorScheme.surfaceVariant,
-        child: GridView.count(
-          crossAxisCount: 2,
-          children: List.generate(length1, (index) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Container(
-                  height: 200,
-                  child: Wrap(
-                    children: [
-                      SizedBox(
-                        width: 200,
-                        height: 155,
-                        child: Padding(
-                          padding: const EdgeInsets.all(15),
-                          child: Image.network(
-                            pokemonimgList[index],
-                            fit: BoxFit.fitWidth,
-                          ),
-                        ),
-                      ),
-                      Center(
-                        child: Text(
-                          pokemonNameList.length <= index
-                              ? "Nameless"
-                              : pokemonNameList[index].asPascalCase,
-                          style: style,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          }),
-        ),
+        child: GridViewWidget(style: style),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: Container(
@@ -77,61 +44,46 @@ class _TestPageState extends State<TestPage> {
           onPressed: () {
             showDialog<String>(
               context: context,
-              builder: (BuildContext context) => AlertDialog(
-                scrollable: true,
-                title: const Text('You caught a Pokemon!'),
-                content: Wrap(alignment: WrapAlignment.center, children: [
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Image.network(
-                      pokemonimgList[length1],
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Text("Name your Pokemon")),
-                  SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: Scrollbar(
-                      child: ListView(
-                        children: [
-                          for (var pair in appState.favorites)
-                            TextButton(
-                                onPressed: () {
-                                  //appState.addPokemonName(pair, length1);
-                                  nameToAdd = pair;
-                                },
-                                child: Text(pair.asPascalCase)),
-                        ],
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  scrollable: true,
+                  title: const Text('You caught a Pokemon!'),
+                  content: Wrap(alignment: WrapAlignment.center, children: [
+                    SizedBox(
+                      width: 200,
+                      height: 200,
+                      child: Image.network(
+                        pokemonimgList[length1],
+                        fit: BoxFit.contain,
                       ),
                     ),
-                  )
-                ]),
-                actions: <Widget>[
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pop(context, 'Cancel');
-                      //appState.addPokemonName(nameToAdd, length1);
-                    },
-                    child: const Text('Cancel'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      if (nameToAdd != WordPair("Nameless", " ")) {
-                        Navigator.pop(context, 'OK');
-                        appState.addPokemonName(nameToAdd, length1);
-                        setState(() {
-                          count++;
-                        });
-                      }
-                    },
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
+                    Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Text("Name your Pokemon")),
+                    FavoriteListDialog(appState: appState)
+                  ]),
+                  actions: <Widget>[
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(context, 'Cancel');
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        if (nameToAdd != WordPair("Nameless", " ")) {
+                          Navigator.pop(context, 'OK');
+                          appState.addPokemonName(nameToAdd, length1);
+                          setState(() {
+                            count++;
+                          });
+                        }
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              },
             );
           },
           child: Text("Catch"),
